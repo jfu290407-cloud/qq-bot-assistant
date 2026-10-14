@@ -1,0 +1,75 @@
+# config.yaml 的模板。
+#
+# 真正的 config.yaml 被 .gitignore 排除（里面有 appid / secret，不进 git），
+# 所以每台机器都要自己照这份建一个：
+#
+#     cp config.yaml.example config.yaml
+#     然后改 appid / secret
+#
+appid: "你的机器人 AppID"
+secret: "你的机器人 Secret"
+
+# 最高管理员 QQ 号：只用于提示和日志展示。
+# QQ 群消息下发里**没有 QQ 号**，只有 member_openid，所以这个号码没法直接
+# 用来校验身份。真正的授权在配置页「权限管理」里按 member_openid 添加
+# （页面会列出最近见过的群成员，点「加入名单」即可）。
+super_admin_qq: "你的QQ号"
+
+# 可选：写死的转发目标群（也可以只在群里 @机器人 发「订阅」来加）
+# 注意：配了「频道独立配置」之后，转发目标群以各频道的 subscribers 为准
+# group_openids:
+#   - "39FD6F7D3AB63E4B9AF34E0A94348DE0"
+
+# 可选：网页配置台。默认 enabled=true / 127.0.0.1 / 8765。
+#
+# 【只在本机看】保持默认即可，用 SSH 隧道访问，不用设口令：
+#     ssh -N -L 8765:127.0.0.1:8765 root@服务器IP
+#     然后浏览器开 http://127.0.0.1:8765
+#
+# 【要直接用公网 IP 访问】host 改成 0.0.0.0 时**必须**设 password，
+# 否则机器人会拒绝启动配置页 —— 这个面板能改设置、能改管理员名单、
+# 能收回别人的板块权限，没有口令等于把控制权挂到网上，几小时就会被扫到。
+#
+# 公网访问还要一起配 cert/key 走 HTTPS：Basic Auth 的密码只是 base64 编码，
+# 不是加密，不走 TLS 等于明文传输。
+#
+# 注意端口别用 80/443：阿里云等国内厂商对未备案的公网 IP/域名会拦截这两个端口，
+# 用 8443 这类高端口不受影响。
+#
+# web:
+#   enabled: true
+#   host: "0.0.0.0"
+#   port: 8443
+#   username: "admin"
+#   password: "换成一个长随机口令"
+#   # 自签证书（没有域名就用这个）：
+#   #   openssl req -x509 -nodes -days 3650 -newkey rsa:2048 \
+#   #     -keyout /opt/forum-bot/panel.key -out /opt/forum-bot/panel.crt \
+#   #     -subj "/CN=你的服务器公网IP"
+#   cert: "/opt/forum-bot/panel.crt"
+#   key: "/opt/forum-bot/panel.key"
+
+# 可选：帖子链接模板
+# 占位符：{channel_number} {guild_id} {channel_id} {thread_id}
+#
+# 它现在是**兜底**：默认会先用官方 CLI 取短链（pd.qq.com/s/xxx），短得多。
+# 短链那条链路需要服务器上装 tencent-channel-cli + 用用户身份扫码登录，
+# 拿不到（没装 / 限流 / 凭证过期）就自动退回这个模板 —— 所以这条别删，它是保底。
+# 开关在配置页「过滤与文案 → 把 {link} 换成帖子短链」。
+# link_template: "https://pd.qq.com/g/{channel_number}/post/{thread_id}"
+
+# 可选：tencent-channel-cli 的 HOME。**绝大多数情况留空就行**（自动推断）。
+# 但下面两种情况必须在这里写明，否则报错很难查：
+#   1. 服务由 systemd 起、unit 里没写 `User=` -> 进程环境里**没有 HOME**，
+#      而 CLI 没 HOME 会直接报「无法确定 state 文件路径（HOME 不可用）」。
+#      症状：手动在终端跑一切正常，机器人里跑就失败 —— 因为终端有 HOME。
+#      （新版代码会自动补上，这一项一般不用填了；填了以你写的为准。）
+#   2. 服务运行用户和**手动扫码登录时用的用户**不是同一个 ->
+#      凭证不在同一个 ~/.qqcli/ 下，症状是"明明登录过了却一直说没登录"。
+# 例：你以 root 扫码登录（凭证在 /root/.qqcli），但服务以 forum 用户跑：
+# cli_home: "/root"
+
+# 可选：频道号。**建议留空** —— 机器人同步频道时会从频道头像 URL 里自动解析，
+# 而且多频道下是按频道各取各的。在这里写死会让所有频道共用一个频道号，
+# 帖子链接就全指到同一个频道去了。
+# channel_number: ""

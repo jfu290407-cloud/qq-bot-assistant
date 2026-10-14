@@ -1,0 +1,16 @@
+# 运行时依赖（只有跑机器人需要的）
+#
+# 与 botpy 的 install_requires 保持一致。开发工具（pre-commit / flake8 / pylint
+# 等）已随 SDK 示例一起从仓库清理，服务器上装这三个就够。
+#
+# 装法：
+#     python3.11 -m venv .venv
+#     .venv/bin/pip install -r requirements-runtime.txt
+#
+# 注意：**不要**再 pip install botpy 本身。仓库里这份 botpy 是改过的
+# （群成员事件、错误码细节等）；只要从仓库根目录用 `python -m forum_bot` 启动，
+# sys.path[0] 就是仓库根目录，import botpy 自动命中仓库里这份。
+
+aiohttp>=3.7.4,<4
+PyYAML
+APScheduler

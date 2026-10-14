@@ -1,0 +1,21 @@
+# ---------------------------------------------------------------------------
+# 行尾统一成 LF（这个项目在 Windows 上开发、部署到 Linux）
+# ---------------------------------------------------------------------------
+# 不设这个的话，git 在 Windows 上默认会把行尾转成 CRLF（core.autocrlf=true），
+# 代码推到服务器后 shell 脚本会直接失败：
+#
+#     /opt/forum-bot.git/hooks/post-receive: /bin/bash^M: bad interpreter
+#
+# 表现为"push 成功但服务没重启"，而且报错很不直观。所以强制 LF。
+* text=auto eol=lf
+
+# 二进制文件不要做任何转换
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.zip binary
+*.gz binary
+*.woff binary
+*.woff2 binary

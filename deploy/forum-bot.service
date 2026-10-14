@@ -1,0 +1,35 @@
+[Unit]
+Description=QQ 频道/群 转发机器人 (forum_bot)
+After=network-online.target
+Wants=network-online.target
+# 反复崩溃时别无限重启刷日志（5 分钟内超过 10 次就停下来）
+StartLimitIntervalSec=300
+StartLimitBurst=10
+
+[Service]
+Type=simple
+
+# ⚠ 必须是仓库根目录！
+#   botpy 在这份仓库里是改过的（群成员事件、错误码细节等），而 pip 里装的
+#   qq-botpy 是没补丁的旧版。WorkingDirectory 放在根目录 + 用 -m 启动，
+#   sys.path[0] 才是根目录，`import botpy` 才会命中仓库里这份。
+#   放错目录的典型症状：启动就报 `_parser unknown event group_member_remove`，
+#   或者 Intents 里没有 group_member_event。
+WorkingDirectory=/opt/forum-bot
+
+# 用虚拟环境的解释器。
+# 没建 venv 的话改成你的 python，例如 /usr/bin/python3.11
+ExecStart=/opt/forum-bot/.venv/bin/python -m forum_bot
+
+# 日志走 journald，别让它缓冲（否则 journalctl 里看不到实时输出）
+Environment=PYTHONUNBUFFERED=1
+Environment=PYTHONIOENCODING=utf-8
+
+Restart=always
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=forum-bot
+
+[Install]
+WantedBy=multi-user.target

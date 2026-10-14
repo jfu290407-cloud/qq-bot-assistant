@@ -1,0 +1,44 @@
+#!/bin/bash
+# 服务器端 git 钩子：收到 push 后自动更新代码并重启服务。
+#
+# 安装（在服务器上做一次）：
+#     sudo cp /opt/forum-bot/deploy/post-receive /opt/forum-bot.git/hooks/post-receive
+#     sudo chmod +x /opt/forum-bot.git/hooks/post-receive
+#
+# 之后在本机 `git push server main` 就等于「更新 + 重启」。
+set -e
+
+WORK_TREE=/opt/forum-bot          # 机器人实际跑的那个目录（systemd 的 WorkingDirectory）
+GIT_DIR=/opt/forum-bot.git        # 裸仓库
+BRANCH=main
+
+# push 时终端里的输出会原样打回给你
+while read -r oldrev newrev refname; do
+    echo "== 收到 $refname: ${oldrev:0:7} -> ${newrev:0:7}"
+
+    if [ "$refname" != "refs/heads/$BRANCH" ]; then
+        echo "   不是 $BRANCH 分支，只更新仓库、不动工作目录"
+        continue
+    fi
+
+    # 关键：只签出「被 git 跟踪的文件」。
+    # 运行期数据（forum_*.json）和密钥（config.yaml）都在**仓库根目录**，
+    # 且在 .gitignore 里，属于**未跟踪**文件，-f 不会覆盖也不会删除它们。
+    # 这正是每次 push 不会把线上订阅/授权/设置冲掉的原因 —— 别把它们加进 git。
+    git --work-tree="$WORK_TREE" --git-dir="$GIT_DIR" checkout -f "$BRANCH"
+    echo "   代码已更新到 $WORK_TREE"
+
+    # 依赖变了就补装（没建 venv 就跳过）
+    if [ -x "$WORK_TREE/.venv/bin/pip" ]; then
+        if ! "$WORK_TREE/.venv/bin/pip" install -q -r "$WORK_TREE/requirements-runtime.txt"; then
+            echo "   !! 依赖安装失败，服务可能起不来，检查 requirements-runtime.txt"
+        fi
+    fi
+
+    if systemctl restart forum-bot; then
+        echo "   forum-bot 已重启"
+    else
+        echo "   !! 重启失败，看 journalctl -u forum-bot -n 50"
+        exit 1
+    fi
+done
